@@ -36,7 +36,7 @@ public class LotteryService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("台湾宾果采集")
+                .setContentTitle("水果采集")
                 .setContentText("采集任务运行中...")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -58,7 +58,7 @@ public class LotteryService extends Service {
                     CHANNEL_ID,
                     "采集服务",
                     NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription("台湾宾果数据采集服务通知");
+            channel.setDescription("数据采集服务通知");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
