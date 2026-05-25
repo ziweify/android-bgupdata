@@ -68,7 +68,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="1. 设置 → 应用设置 → 应用管理 → 找到本应用 → 省电策略 → 选择\"无限制\"\n2. 设置 → 电池与性能 → 找到本应用 → 关闭\"后台限制\"\n3. 最近任务列表 → 下拉本应用卡片锁定"
+                        android:text="1. 设置 → 应用设置 → 应用管理 → 找到本应用 → 省电策略 → 选择&quot;无限制&quot;\n2. 设置 → 电池与性能 → 找到本应用 → 关闭&quot;后台限制&quot;\n3. 最近任务列表 → 下拉本应用卡片锁定"
                         android:textSize="13sp"
                         android:lineSpacingExtra="4dp"
                         android:textColor="@color/text_secondary" />
@@ -104,7 +104,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="1. 设置 → 电池 → 更多电池设置 → 关闭\"休眠时关闭后台\"\n2. 设置 → 应用管理 → 找到本应用 → 耗电保护 → 允许后台运行\n3. 最近任务列表 → 下拉本应用卡片锁定"
+                        android:text="1. 设置 → 电池 → 更多电池设置 → 关闭&quot;休眠时关闭后台&quot;\n2. 设置 → 应用管理 → 找到本应用 → 耗电保护 → 允许后台运行\n3. 最近任务列表 → 下拉本应用卡片锁定"
                         android:textSize="13sp"
                         android:lineSpacingExtra="4dp"
                         android:textColor="@color/text_secondary" />
@@ -140,7 +140,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="1. 设置 → 电池和设备维护 → 电池 → 后台使用限制 → 将本应用从\"深度休眠\"移除\n2. 设置 → 应用程序 → 找到本应用 → 电池 → 不受限"
+                        android:text="1. 设置 → 电池和设备维护 → 电池 → 后台使用限制 → 将本应用从&quot;深度休眠&quot;移除\n2. 设置 → 应用程序 → 找到本应用 → 电池 → 不受限"
                         android:textSize="13sp"
                         android:lineSpacingExtra="4dp"
                         android:textColor="@color/text_secondary" />
@@ -173,7 +173,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="• 启动任务后，通知栏会常驻\"采集任务运行中\"通知，请勿手动清除\n\n• 在最近任务列表中锁定本应用（下拉应用卡片出现锁图标），防止被一键清理\n\n• 如果手机有\"省电模式\"或\"超级省电\"，请关闭或将本应用加入白名单\n\n• 确保手机网络正常连接（WiFi 或移动数据）"
+                        android:text="• 启动任务后，通知栏会常驻&quot;采集任务运行中&quot;通知，请勿手动清除\n\n• 在最近任务列表中锁定本应用（下拉应用卡片出现锁图标），防止被一键清理\n\n• 如果手机有&quot;省电模式&quot;或&quot;超级省电&quot;，请关闭或将本应用加入白名单\n\n• 确保手机网络正常连接（WiFi 或移动数据）"
                         android:textSize="13sp"
                         android:lineSpacingExtra="2dp"
                         android:textColor="@color/text_secondary" />
