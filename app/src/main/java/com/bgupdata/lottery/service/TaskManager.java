@@ -291,8 +291,9 @@ public class TaskManager {
             collectingList.remove(item);
         }
 
+        // 始终通知采集列表更新（acCount递增需要刷新UI）
+        notifyCollectingUpdate();
         if (!toRemove.isEmpty()) {
-            notifyCollectingUpdate();
             notifyCompletedUpdate();
             notifyFailedUpdate();
         }

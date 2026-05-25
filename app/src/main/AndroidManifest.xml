@@ -26,6 +26,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false" />
+
         <service
             android:name=".service.LotteryService"
             android:foregroundServiceType="dataSync"

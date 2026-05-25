@@ -48,20 +48,37 @@ public class LotteryCollector {
         int drawTerm = latestPost.get("drawTerm").getAsInt();
         JsonArray openShowOrder = latestPost.getAsJsonArray("openShowOrder");
 
-        if (openShowOrder.size() >= 5) {
-            String s1 = openShowOrder.get(0).getAsString().trim();
-            String s2 = openShowOrder.get(1).getAsString().trim();
-            String s3 = openShowOrder.get(2).getAsString().trim();
-            String s4 = openShowOrder.get(3).getAsString().trim();
-            String s5 = openShowOrder.get(4).getAsString().trim();
+        if (openShowOrder == null || openShowOrder.size() < 5) return null;
 
-            LotteryData data = new LotteryData(drawTerm);
-            data.setOpenData(s1 + "," + s2 + "," + s3 + "," + s4 + "," + s5 + ",1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1");
-            data.setAcTime(BgBaseApi.formatTime(new Date()));
-            return data;
+        StringBuilder sbOpenData = new StringBuilder();
+        int count = Math.min(openShowOrder.size(), 20);
+        for (int i = 0; i < count; i++) {
+            String numStr = openShowOrder.get(i).getAsString().trim();
+            int num = Integer.parseInt(numStr);
+            if (sbOpenData.length() > 0) {
+                sbOpenData.append(String.format(",%02d", num));
+            } else {
+                sbOpenData.append(String.format("%02d", num));
+            }
         }
 
-        return null;
+        // 如果只有5个号码（旧API格式），补1填充到21位
+        if (count <= 5) {
+            for (int i = count; i < 21; i++) {
+                sbOpenData.append(",1");
+            }
+        } else {
+            // 有20个号码时，追加特码 bullEyeTop
+            if (latestPost.has("bullEyeTop")) {
+                int teCode = latestPost.get("bullEyeTop").getAsInt();
+                sbOpenData.append(String.format(",%02d", teCode));
+            }
+        }
+
+        LotteryData data = new LotteryData(drawTerm);
+        data.setOpenData(sbOpenData.toString());
+        data.setAcTime(BgBaseApi.formatTime(new Date()));
+        return data;
     }
 
     /**

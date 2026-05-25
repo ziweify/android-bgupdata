@@ -35,8 +35,20 @@ public class LotteryAdapter extends RecyclerView.Adapter<LotteryAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         LotteryData data = dataList.get(position);
         holder.tvIssueId.setText(String.valueOf(data.getIssueId()));
-        holder.tvOpenData.setText(data.getOpenData() != null ? data.getOpenData() : "等待中...");
-        holder.tvAcCount.setText(String.valueOf(data.getAcCount()));
+
+        String openData = data.getOpenData();
+        if (openData == null || openData.isEmpty()) {
+            holder.tvOpenData.setText("等待采集...");
+            holder.tvOpenData.setTextColor(0xFF9E9E9E);
+        } else if (data.getStatus() == LotteryData.Status.FAILED) {
+            holder.tvOpenData.setText("采集失败");
+            holder.tvOpenData.setTextColor(0xFFF44336);
+        } else {
+            holder.tvOpenData.setText(openData);
+            holder.tvOpenData.setTextColor(0xFF424242);
+        }
+
+        holder.tvAcCount.setText(data.getAcCount() > 0 ? String.valueOf(data.getAcCount()) : "");
         holder.tvAcTime.setText(data.getAcTime() != null ? data.getAcTime() : "");
     }
 

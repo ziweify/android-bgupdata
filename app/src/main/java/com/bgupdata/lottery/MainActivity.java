@@ -156,6 +156,16 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         btnStop.setOnClickListener(v -> stopTask());
         btnClearDebug.setOnClickListener(v -> clearDebug());
         btnAddAddress.setOnClickListener(v -> showAddressDialog(-1, null));
+
+        com.google.android.material.appbar.MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.inflateMenu(R.menu.menu_main);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.menu_about) {
+                startActivity(new Intent(this, AboutActivity.class));
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
