@@ -43,16 +43,17 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity implements TaskManager.TaskCallback {
 
     private TextView tvStatus, tvIssueCur, tvTimeCur, tvIssueNext, tvTimeNext, tvCountdown;
-    private TextView tvCollectingTitle, tvCompletedTitle, tvDebug;
+    private TextView tvCollectingTitle, tvCompletedTitle, tvFailedTitle, tvDebug;
     private EditText etProxy;
     private SwitchMaterial switchProxy;
     private MaterialButton btnStart, btnStop, btnClearDebug, btnAddAddress;
-    private RecyclerView rvAddress, rvCollecting, rvCompleted;
+    private RecyclerView rvAddress, rvCollecting, rvCompleted, rvFailed;
     private ScrollView svDebug;
 
     private AddressAdapter addressAdapter;
     private LotteryAdapter collectingAdapter;
     private LotteryAdapter completedAdapter;
+    private LotteryAdapter failedAdapter;
 
     private TaskManager taskManager;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -84,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         tvCountdown = findViewById(R.id.tv_countdown);
         tvCollectingTitle = findViewById(R.id.tv_collecting_title);
         tvCompletedTitle = findViewById(R.id.tv_completed_title);
+        tvFailedTitle = findViewById(R.id.tv_failed_title);
         tvDebug = findViewById(R.id.tv_debug);
         etProxy = findViewById(R.id.et_proxy);
         switchProxy = findViewById(R.id.switch_proxy);
@@ -94,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         rvAddress = findViewById(R.id.rv_address);
         rvCollecting = findViewById(R.id.rv_collecting);
         rvCompleted = findViewById(R.id.rv_completed);
+        rvFailed = findViewById(R.id.rv_failed);
         svDebug = findViewById(R.id.sv_debug);
     }
 
@@ -131,6 +134,10 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         completedAdapter = new LotteryAdapter();
         rvCompleted.setLayoutManager(new LinearLayoutManager(this));
         rvCompleted.setAdapter(completedAdapter);
+
+        failedAdapter = new LotteryAdapter();
+        rvFailed.setLayoutManager(new LinearLayoutManager(this));
+        rvFailed.setAdapter(failedAdapter);
     }
 
     private void initDefaultAddresses() {
@@ -303,6 +310,14 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         mainHandler.post(() -> {
             completedAdapter.setData(list);
             tvCompletedTitle.setText(String.format(Locale.getDefault(), "采集完成 (%d)", list.size()));
+        });
+    }
+
+    @Override
+    public void onFailedListUpdate(List<LotteryData> list) {
+        mainHandler.post(() -> {
+            failedAdapter.setData(list);
+            tvFailedTitle.setText(String.format(Locale.getDefault(), "采集失败 (%d)", list.size()));
         });
     }
 

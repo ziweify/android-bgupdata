@@ -29,6 +29,7 @@ public class TaskManager {
         void onIssueUpdate(String curIssueId, String curTime, String nextIssueId, String nextTime);
         void onCollectingListUpdate(List<LotteryData> list);
         void onCompletedListUpdate(List<LotteryData> list);
+        void onFailedListUpdate(List<LotteryData> list);
         void onDebugMessage(String message, DebugLevel level);
         void onStatusChange(boolean running);
     }
@@ -45,6 +46,7 @@ public class TaskManager {
 
     private final CopyOnWriteArrayList<LotteryData> collectingList = new CopyOnWriteArrayList<>();
     private final CopyOnWriteArrayList<LotteryData> completedList = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<LotteryData> failedList = new CopyOnWriteArrayList<>();
 
     private String submitAddress = "";
     private String proxyIp = "";
@@ -68,6 +70,7 @@ public class TaskManager {
 
     public List<LotteryData> getCollectingList() { return new ArrayList<>(collectingList); }
     public List<LotteryData> getCompletedList() { return new ArrayList<>(completedList); }
+    public List<LotteryData> getFailedList() { return new ArrayList<>(failedList); }
 
     /**
      * 启动任务
@@ -243,29 +246,56 @@ public class TaskManager {
     }
 
     /**
-     * 匹配采集结果并投递
+     * 匹配采集结果并投递，检测过期期号标记为失败
      */
     private void matchAndPost(List<LotteryData> fetchedItems) {
-        Iterator<LotteryData> it = collectingList.iterator();
-        while (it.hasNext()) {
-            LotteryData collecting = it.next();
+        // 找出采集到的最大期号，用于判断过期
+        int maxFetchedIssue = 0;
+        for (LotteryData f : fetchedItems) {
+            if (f.getIssueId() > maxFetchedIssue) {
+                maxFetchedIssue = f.getIssueId();
+            }
+        }
+
+        List<LotteryData> toRemove = new ArrayList<>();
+
+        for (LotteryData collecting : collectingList) {
             collecting.incrementAcCount();
+            boolean matched = false;
 
             for (LotteryData fetched : fetchedItems) {
                 if (fetched.getIssueId() == collecting.getIssueId()) {
-                    collectingList.remove(collecting);
+                    fetched.setStatus(LotteryData.Status.SUCCESS);
                     completedList.add(0, fetched);
-                    notifyCollectingUpdate();
-                    notifyCompletedUpdate();
+                    toRemove.add(collecting);
+                    matched = true;
 
                     debug(String.format("采集成功: %d -> %s", fetched.getIssueId(), fetched.getOpenData()), DebugLevel.INFO);
-
                     postData(fetched);
                     break;
                 }
             }
+
+            // 未匹配到且采集到的最大期号已超过该期号10期以上，判定为失败
+            if (!matched && maxFetchedIssue > 0 && (maxFetchedIssue - collecting.getIssueId()) >= 10) {
+                collecting.setStatus(LotteryData.Status.FAILED);
+                collecting.setAcTime(BgBaseApi.formatTime(new java.util.Date()));
+                failedList.add(0, collecting);
+                toRemove.add(collecting);
+
+                debug(String.format("采集失败(过期): %d, 已超过%d期", collecting.getIssueId(), maxFetchedIssue - collecting.getIssueId()), DebugLevel.ERROR);
+            }
         }
-        notifyCollectingUpdate();
+
+        for (LotteryData item : toRemove) {
+            collectingList.remove(item);
+        }
+
+        if (!toRemove.isEmpty()) {
+            notifyCollectingUpdate();
+            notifyCompletedUpdate();
+            notifyFailedUpdate();
+        }
     }
 
     /**
@@ -313,6 +343,12 @@ public class TaskManager {
     private void notifyCompletedUpdate() {
         if (callback != null) {
             callback.onCompletedListUpdate(new ArrayList<>(completedList));
+        }
+    }
+
+    private void notifyFailedUpdate() {
+        if (callback != null) {
+            callback.onFailedListUpdate(new ArrayList<>(failedList));
         }
     }
 

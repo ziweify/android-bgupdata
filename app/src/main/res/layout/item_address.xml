@@ -2,63 +2,79 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:paddingVertical="6dp"
+    android:orientation="vertical"
+    android:paddingVertical="4dp"
     android:paddingHorizontal="4dp"
-    android:gravity="center_vertical"
     android:background="?attr/selectableItemBackground">
 
-    <!-- 启用/禁用开关 -->
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/switch_enabled"
-        android:layout_width="wrap_content"
+    <!-- 第一行: 开关 + 类型标签 + 操作按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:checked="true" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-    <!-- 类型标签 -->
-    <TextView
-        android:id="@+id/tv_type"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_type_tag"
-        android:paddingHorizontal="6dp"
-        android:paddingVertical="2dp"
-        android:textSize="11sp"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        android:text="wold" />
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_enabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="28dp"
+            android:checked="true" />
 
-    <!-- URL -->
+        <TextView
+            android:id="@+id/tv_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_type_tag"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="1dp"
+            android:textSize="11sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:text="wold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btn_edit"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_edit"
+            android:contentDescription="编辑"
+            android:scaleType="centerInside" />
+
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_delete"
+            android:contentDescription="删除"
+            android:scaleType="centerInside" />
+    </LinearLayout>
+
+    <!-- 第二行: URL完整显示，可多行，可选中复制 -->
     <TextView
         android:id="@+id/tv_url"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginStart="8dp"
-        android:ellipsize="middle"
-        android:maxLines="1"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="2dp"
         android:textSize="12sp"
         android:textColor="#424242"
-        android:fontFamily="monospace" />
+        android:fontFamily="monospace"
+        android:textIsSelectable="true" />
 
-    <!-- 编辑按钮 -->
-    <ImageButton
-        android:id="@+id/btn_edit"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_edit"
-        android:contentDescription="编辑"
-        android:scaleType="centerInside" />
-
-    <!-- 删除按钮 -->
-    <ImageButton
-        android:id="@+id/btn_delete"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_delete"
-        android:contentDescription="删除"
-        android:scaleType="centerInside" />
+    <!-- 分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="4dp"
+        android:background="#EEEEEE" />
 
 </LinearLayout>
