@@ -1,5 +1,6 @@
 package com.bgupdata.lottery;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,23 +10,32 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bgupdata.lottery.adapter.AddressAdapter;
 import com.bgupdata.lottery.adapter.LotteryAdapter;
+import com.bgupdata.lottery.model.AddressItem;
 import com.bgupdata.lottery.model.DebugLevel;
 import com.bgupdata.lottery.model.LotteryData;
+import com.bgupdata.lottery.model.PostSiteType;
 import com.bgupdata.lottery.service.LotteryService;
 import com.bgupdata.lottery.service.TaskManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -34,12 +44,13 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
 
     private TextView tvStatus, tvIssueCur, tvTimeCur, tvIssueNext, tvTimeNext, tvCountdown;
     private TextView tvCollectingTitle, tvCompletedTitle, tvDebug;
-    private EditText etSubmitAddress, etProxy;
+    private EditText etProxy;
     private SwitchMaterial switchProxy;
-    private MaterialButton btnStart, btnStop, btnClearDebug;
-    private RecyclerView rvCollecting, rvCompleted;
+    private MaterialButton btnStart, btnStop, btnClearDebug, btnAddAddress;
+    private RecyclerView rvAddress, rvCollecting, rvCompleted;
     private ScrollView svDebug;
 
+    private AddressAdapter addressAdapter;
     private LotteryAdapter collectingAdapter;
     private LotteryAdapter completedAdapter;
 
@@ -57,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
 
         initViews();
         initAdapters();
-        initDefaultConfig();
+        initDefaultAddresses();
         initListeners();
 
         taskManager = new TaskManager();
@@ -74,35 +85,62 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         tvCollectingTitle = findViewById(R.id.tv_collecting_title);
         tvCompletedTitle = findViewById(R.id.tv_completed_title);
         tvDebug = findViewById(R.id.tv_debug);
-        etSubmitAddress = findViewById(R.id.et_submit_address);
         etProxy = findViewById(R.id.et_proxy);
         switchProxy = findViewById(R.id.switch_proxy);
         btnStart = findViewById(R.id.btn_start);
         btnStop = findViewById(R.id.btn_stop);
         btnClearDebug = findViewById(R.id.btn_clear_debug);
+        btnAddAddress = findViewById(R.id.btn_add_address);
+        rvAddress = findViewById(R.id.rv_address);
         rvCollecting = findViewById(R.id.rv_collecting);
         rvCompleted = findViewById(R.id.rv_completed);
         svDebug = findViewById(R.id.sv_debug);
     }
 
     private void initAdapters() {
-        collectingAdapter = new LotteryAdapter();
-        completedAdapter = new LotteryAdapter();
+        addressAdapter = new AddressAdapter();
+        addressAdapter.setListener(new AddressAdapter.OnItemActionListener() {
+            @Override
+            public void onEdit(int position, AddressItem item) {
+                showAddressDialog(position, item);
+            }
 
+            @Override
+            public void onDelete(int position, AddressItem item) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("确认删除")
+                        .setMessage("删除: " + item.getUrl() + " ?")
+                        .setPositiveButton("删除", (d, w) -> addressAdapter.removeItem(position))
+                        .setNegativeButton("取消", null)
+                        .show();
+            }
+
+            @Override
+            public void onToggle(int position, AddressItem item, boolean enabled) {
+                // 状态已在adapter内更新
+            }
+        });
+
+        rvAddress.setLayoutManager(new LinearLayoutManager(this));
+        rvAddress.setAdapter(addressAdapter);
+
+        collectingAdapter = new LotteryAdapter();
         rvCollecting.setLayoutManager(new LinearLayoutManager(this));
         rvCollecting.setAdapter(collectingAdapter);
 
+        completedAdapter = new LotteryAdapter();
         rvCompleted.setLayoutManager(new LinearLayoutManager(this));
         rvCompleted.setAdapter(completedAdapter);
     }
 
-    private void initDefaultConfig() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[wold]http://8.138.183.44/api/task/upload_twbgone?token=asdrv24n33323brf\n");
-        sb.append("[wold]http://8.134.98.40/api/task/upload_twbgone?token=asdrv24n33323brf\n");
-        sb.append("[w168]http://8.134.71.102/api/api/upload_result.do\n");
-        sb.append("[boter]http://8.134.71.102:789/api/boter/uploadbg\n");
-        etSubmitAddress.setText(sb.toString());
+    private void initDefaultAddresses() {
+        List<AddressItem> defaults = new ArrayList<>();
+        defaults.add(new AddressItem("http://8.138.183.44/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, true));
+        defaults.add(new AddressItem("http://8.134.98.40/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, true));
+        defaults.add(new AddressItem("http://8.134.71.102/api/api/upload_result.do", PostSiteType.W168, true));
+        defaults.add(new AddressItem("http://8.134.71.102:789/api/boter/uploadbg", PostSiteType.BOTER, true));
+        addressAdapter.setData(defaults);
+
         etProxy.setText("127.0.0.1:7890");
     }
 
@@ -110,19 +148,95 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         btnStart.setOnClickListener(v -> startTask());
         btnStop.setOnClickListener(v -> stopTask());
         btnClearDebug.setOnClickListener(v -> clearDebug());
+        btnAddAddress.setOnClickListener(v -> showAddressDialog(-1, null));
+    }
+
+    /**
+     * 显示添加/编辑地址对话框
+     * @param position -1表示新增，>=0表示编辑
+     */
+    private void showAddressDialog(int position, AddressItem existingItem) {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_address, null);
+        TextView tvTitle = dialogView.findViewById(R.id.tv_dialog_title);
+        Spinner spinnerType = dialogView.findViewById(R.id.spinner_type);
+        EditText etUrl = dialogView.findViewById(R.id.et_url);
+
+        // 设置类型下拉菜单
+        String[] typeNames = new String[PostSiteType.values().length];
+        for (int i = 0; i < PostSiteType.values().length; i++) {
+            typeNames[i] = PostSiteType.values()[i].getValue();
+        }
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, typeNames);
+        typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerType.setAdapter(typeAdapter);
+
+        boolean isEdit = position >= 0 && existingItem != null;
+        if (isEdit) {
+            tvTitle.setText("编辑投递地址");
+            etUrl.setText(existingItem.getUrl());
+            for (int i = 0; i < PostSiteType.values().length; i++) {
+                if (PostSiteType.values()[i] == existingItem.getSiteType()) {
+                    spinnerType.setSelection(i);
+                    break;
+                }
+            }
+        } else {
+            tvTitle.setText("添加投递地址");
+        }
+
+        new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setPositiveButton(isEdit ? "保存" : "添加", (dialog, which) -> {
+                    String url = etUrl.getText().toString().trim();
+                    if (url.isEmpty()) {
+                        Toast.makeText(this, "请输入网址", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    int selectedIndex = spinnerType.getSelectedItemPosition();
+                    PostSiteType type = PostSiteType.values()[selectedIndex];
+
+                    if (isEdit) {
+                        AddressItem updated = new AddressItem(url, type, existingItem.isEnabled());
+                        addressAdapter.updateItem(position, updated);
+                    } else {
+                        AddressItem newItem = new AddressItem(url, type, true);
+                        addressAdapter.addItem(newItem);
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /**
+     * 从地址列表构建配置字符串(仅启用的项)
+     */
+    private String buildAddressConfig() {
+        StringBuilder sb = new StringBuilder();
+        for (AddressItem item : addressAdapter.getData()) {
+            if (item.isEnabled()) {
+                sb.append(item.toConfigString()).append(",");
+            }
+        }
+        return sb.toString();
     }
 
     private void startTask() {
-        String address = etSubmitAddress.getText().toString().trim();
+        String address = buildAddressConfig();
         String proxy = etProxy.getText().toString().trim();
         boolean useProxy = switchProxy.isChecked();
+
+        if (address.isEmpty()) {
+            Toast.makeText(this, "请至少添加一个启用的投递地址", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         taskManager.setConfig(address, proxy, useProxy);
         taskManager.start();
 
         btnStart.setEnabled(false);
         btnStop.setEnabled(true);
-        etSubmitAddress.setEnabled(false);
+        btnAddAddress.setEnabled(false);
 
         startForegroundService();
     }
@@ -131,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         taskManager.stop();
         btnStart.setEnabled(true);
         btnStop.setEnabled(false);
-        etSubmitAddress.setEnabled(true);
+        btnAddAddress.setEnabled(true);
 
         stopService(new Intent(this, LotteryService.class));
     }
@@ -151,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         tvDebug.setText("");
     }
 
-    // ==================== TaskCallback 实现 ====================
+    // ==================== TaskCallback ====================
 
     @Override
     public void onCountdownUpdate(int seconds) {
