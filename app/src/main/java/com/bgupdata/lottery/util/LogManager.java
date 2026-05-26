@@ -35,7 +35,7 @@ public class LogManager {
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
 
     private LogManager(Context context) {
-        File externalDir = Environment.getExternalStorageDirectory();
+        File externalDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
         logDir = new File(externalDir, "ShuiGuoCaiJi/logs");
         if (!logDir.exists()) {
             logDir.mkdirs();
