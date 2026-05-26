@@ -2,6 +2,7 @@ package com.bgupdata.lottery;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -40,6 +41,8 @@ import com.bgupdata.lottery.service.TaskManager;
 import com.bgupdata.lottery.util.LogManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -65,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
 
     private TaskManager taskManager;
     private LogManager logManager;
+    private SharedPreferences prefs;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final SpannableStringBuilder debugBuilder = new SpannableStringBuilder();
@@ -94,9 +98,11 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         taskManager.setCallback(this);
         taskManager.setAutoPost(switchAutoPost.isChecked());
         taskManager.setConfig(buildAddressConfig(), etProxy.getText().toString().trim(), switchProxy.isChecked());
-        taskManager.start();
 
-        startForegroundService();
+        if (switchAutoCollect.isChecked()) {
+            taskManager.start();
+            startForegroundService();
+        }
         loadTodayLogs();
     }
 
@@ -144,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                         .setPositiveButton("删除", (d, w) -> {
                             addressAdapter.removeItem(position);
                             syncAddressToTaskManager();
+                            saveSettings();
                         })
                         .setNegativeButton("取消", null)
                         .show();
@@ -152,6 +159,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
             @Override
             public void onToggle(int position, AddressItem item, boolean enabled) {
                 syncAddressToTaskManager();
+                saveSettings();
             }
         });
 
@@ -177,14 +185,47 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     }
 
     private void initDefaultAddresses() {
+        prefs = getSharedPreferences("app_settings", MODE_PRIVATE);
+        loadSettings();
+    }
+
+    private void loadSettings() {
+        switchAutoCollect.setChecked(prefs.getBoolean("auto_collect", true));
+        switchAutoPost.setChecked(prefs.getBoolean("auto_post", false));
+        switchProxy.setChecked(prefs.getBoolean("use_proxy", false));
+        etProxy.setText(prefs.getString("proxy_address", "127.0.0.1:7890"));
+
+        String addressJson = prefs.getString("address_list", "");
+        if (!addressJson.isEmpty()) {
+            try {
+                List<AddressItem> items = new Gson().fromJson(addressJson,
+                        new TypeToken<List<AddressItem>>(){}.getType());
+                if (items != null && !items.isEmpty()) {
+                    addressAdapter.setData(items);
+                    return;
+                }
+            } catch (Exception e) {
+                // JSON解析失败，使用默认值
+            }
+        }
+
+        // 默认地址配置
         List<AddressItem> defaults = new ArrayList<>();
         defaults.add(new AddressItem("http://8.138.183.44/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, false));
         defaults.add(new AddressItem("http://8.134.98.40/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, false));
         defaults.add(new AddressItem("http://8.134.71.102/api/api/upload_result.do", PostSiteType.W168, false));
         defaults.add(new AddressItem("http://8.134.71.102:789/api/boter/uploadbg", PostSiteType.BOTER, true));
         addressAdapter.setData(defaults);
+    }
 
-        etProxy.setText("127.0.0.1:7890");
+    private void saveSettings() {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("auto_collect", switchAutoCollect.isChecked());
+        editor.putBoolean("auto_post", switchAutoPost.isChecked());
+        editor.putBoolean("use_proxy", switchProxy.isChecked());
+        editor.putString("proxy_address", etProxy.getText().toString().trim());
+        editor.putString("address_list", new Gson().toJson(addressAdapter.getData()));
+        editor.apply();
     }
 
     private void initListeners() {
@@ -203,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                     taskManager.stop();
                 }
             }
+            saveSettings();
         });
 
         switchAutoPost.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -210,7 +252,10 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                 taskManager.setAutoPost(isChecked);
                 taskManager.updateSubmitAddress(buildAddressConfig());
             }
+            saveSettings();
         });
+
+        switchProxy.setOnCheckedChangeListener((buttonView, isChecked) -> saveSettings());
 
         btnPostAll.setOnClickListener(v -> {
             if (taskManager != null) {
@@ -308,6 +353,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                         addressAdapter.addItem(newItem);
                     }
                     syncAddressToTaskManager();
+                    saveSettings();
                 })
                 .setNegativeButton("取消", null)
                 .show();
@@ -488,6 +534,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
             debugLineCount++;
 
             tvDebug.setText(debugBuilder);
+            svDebug.post(() -> svDebug.scrollTo(0, tvDebug.getBottom()));
         });
     }
 
@@ -502,6 +549,12 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                 tvStatus.setTextColor(getResources().getColor(R.color.status_stopped));
             }
         });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveSettings();
     }
 
     @Override
