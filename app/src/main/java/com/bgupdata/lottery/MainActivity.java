@@ -53,8 +53,8 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     private TextView tvCollectingTitle, tvCompletedTitle, tvFailedTitle, tvDebug;
     private TextView tvCollectingArrow, tvCompletedArrow, tvFailedArrow;
     private EditText etProxy;
-    private SwitchMaterial switchProxy, switchAutoPost;
-    private MaterialButton btnStart, btnStop, btnClearDebug, btnAddAddress, btnPostAll;
+    private SwitchMaterial switchProxy, switchAutoPost, switchAutoCollect;
+    private MaterialButton btnClearDebug, btnAddAddress, btnPostAll;
     private RecyclerView rvAddress, rvCollecting, rvCompleted, rvFailed;
     private ScrollView svDebug;
 
@@ -92,7 +92,11 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         taskManager = new TaskManager();
         taskManager.setLogManager(logManager);
         taskManager.setCallback(this);
+        taskManager.setAutoPost(switchAutoPost.isChecked());
+        taskManager.setConfig(buildAddressConfig(), etProxy.getText().toString().trim(), switchProxy.isChecked());
+        taskManager.start();
 
+        startForegroundService();
         loadTodayLogs();
     }
 
@@ -113,8 +117,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         etProxy = findViewById(R.id.et_proxy);
         switchProxy = findViewById(R.id.switch_proxy);
         switchAutoPost = findViewById(R.id.switch_auto_post);
-        btnStart = findViewById(R.id.btn_start);
-        btnStop = findViewById(R.id.btn_stop);
+        switchAutoCollect = findViewById(R.id.switch_auto_collect);
         btnClearDebug = findViewById(R.id.btn_clear_debug);
         btnAddAddress = findViewById(R.id.btn_add_address);
         btnPostAll = findViewById(R.id.btn_post_all);
@@ -175,9 +178,9 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
 
     private void initDefaultAddresses() {
         List<AddressItem> defaults = new ArrayList<>();
-        defaults.add(new AddressItem("http://8.138.183.44/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, true));
-        defaults.add(new AddressItem("http://8.134.98.40/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, true));
-        defaults.add(new AddressItem("http://8.134.71.102/api/api/upload_result.do", PostSiteType.W168, true));
+        defaults.add(new AddressItem("http://8.138.183.44/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, false));
+        defaults.add(new AddressItem("http://8.134.98.40/api/task/upload_twbgone?token=asdrv24n33323brf", PostSiteType.WOLD, false));
+        defaults.add(new AddressItem("http://8.134.71.102/api/api/upload_result.do", PostSiteType.W168, false));
         defaults.add(new AddressItem("http://8.134.71.102:789/api/boter/uploadbg", PostSiteType.BOTER, true));
         addressAdapter.setData(defaults);
 
@@ -185,14 +188,27 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     }
 
     private void initListeners() {
-        btnStart.setOnClickListener(v -> startTask());
-        btnStop.setOnClickListener(v -> stopTask());
         btnClearDebug.setOnClickListener(v -> clearDebug());
         btnAddAddress.setOnClickListener(v -> showAddressDialog(-1, null));
+
+        switchAutoCollect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (taskManager != null) {
+                if (isChecked) {
+                    if (!taskManager.isRunning()) {
+                        taskManager.setConfig(buildAddressConfig(), etProxy.getText().toString().trim(), switchProxy.isChecked());
+                        taskManager.start();
+                        startForegroundService();
+                    }
+                } else {
+                    taskManager.stop();
+                }
+            }
+        });
 
         switchAutoPost.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (taskManager != null) {
                 taskManager.setAutoPost(isChecked);
+                taskManager.updateSubmitAddress(buildAddressConfig());
             }
         });
 
@@ -316,36 +332,6 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         }
     }
 
-    private void startTask() {
-        String address = buildAddressConfig();
-        String proxy = etProxy.getText().toString().trim();
-        boolean useProxy = switchProxy.isChecked();
-
-        if (address.isEmpty()) {
-            Toast.makeText(this, "请至少添加一个启用的投递地址", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        taskManager.setConfig(address, proxy, useProxy);
-        taskManager.setAutoPost(switchAutoPost.isChecked());
-        taskManager.start();
-
-        btnStart.setEnabled(false);
-        btnStop.setEnabled(true);
-        btnAddAddress.setEnabled(false);
-
-        startForegroundService();
-    }
-
-    private void stopTask() {
-        taskManager.stop();
-        btnStart.setEnabled(true);
-        btnStop.setEnabled(false);
-        btnAddAddress.setEnabled(true);
-
-        stopService(new Intent(this, LotteryService.class));
-    }
-
     private void startForegroundService() {
         Intent serviceIntent = new Intent(this, LotteryService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -416,7 +402,6 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                         debugLineCount++;
                     }
                     tvDebug.setText(debugBuilder);
-                    svDebug.post(() -> svDebug.fullScroll(ScrollView.FOCUS_DOWN));
                 });
             }
         }).start();
@@ -503,7 +488,6 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
             debugLineCount++;
 
             tvDebug.setText(debugBuilder);
-            svDebug.post(() -> svDebug.fullScroll(ScrollView.FOCUS_DOWN));
         });
     }
 

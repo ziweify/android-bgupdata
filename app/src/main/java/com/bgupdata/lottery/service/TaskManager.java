@@ -132,6 +132,12 @@ public class TaskManager {
 
         refreshIssueData();
 
+        // 启动时将当前期号加入采集列表
+        if (!curIssueId.isEmpty()) {
+            int curId = Integer.parseInt(curIssueId);
+            insertCollecting(curId);
+        }
+
         countdownExecutor = Executors.newSingleThreadScheduledExecutor();
         countdownExecutor.scheduleAtFixedRate(this::tickCountdown, 0, 1, TimeUnit.SECONDS);
 
