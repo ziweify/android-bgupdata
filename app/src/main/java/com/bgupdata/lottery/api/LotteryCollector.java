@@ -69,9 +69,14 @@ public class LotteryCollector {
             }
         } else {
             // 有20个号码时，追加特码 bullEyeTop
-            if (latestPost.has("bullEyeTop")) {
+            if (latestPost.has("bullEyeTop") && !latestPost.get("bullEyeTop").isJsonNull()) {
                 int teCode = latestPost.get("bullEyeTop").getAsInt();
                 sbOpenData.append(String.format(",%02d", teCode));
+            } else {
+                // bullEyeTop 不存在时，使用最后一个号码作为特码
+                String lastNumStr = openShowOrder.get(count - 1).getAsString().trim();
+                int lastNum = Integer.parseInt(lastNumStr);
+                sbOpenData.append(String.format(",%02d", lastNum));
             }
         }
 

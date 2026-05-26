@@ -4,6 +4,8 @@ import com.bgupdata.lottery.model.LotteryData;
 import com.bgupdata.lottery.model.PostSiteType;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -75,24 +77,37 @@ public abstract class PostLotteryData {
     }
 
     /**
-     * 处理opendata格式：空格分隔转逗号分隔
+     * 处理opendata格式，确保有21个数字
+     * 兜底逻辑：如果只有20个数，复制最后一个作为第21个（与原C#程序一致）
      */
     protected String formatOpenData(LotteryData data) {
         if (data.getOpenData() == null || data.getOpenData().isEmpty()) {
             return "";
         }
         String openData = data.getOpenData().trim();
+        String[] items;
         if (openData.contains(" ")) {
-            String[] items = openData.split("\\s+");
-            StringBuilder sb = new StringBuilder();
-            for (String item : items) {
-                if (!item.isEmpty()) {
-                    if (sb.length() > 0) sb.append(",");
-                    sb.append(item);
-                }
-            }
-            return sb.toString();
+            items = openData.split("\\s+");
+        } else {
+            items = openData.split(",");
         }
-        return openData;
+
+        List<String> lstItem = new ArrayList<>();
+        for (String item : items) {
+            if (!item.isEmpty()) {
+                lstItem.add(item);
+            }
+        }
+
+        if (lstItem.size() == 20) {
+            lstItem.add(lstItem.get(lstItem.size() - 1));
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < lstItem.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append(lstItem.get(i));
+        }
+        return sb.toString();
     }
 }
