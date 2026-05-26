@@ -125,6 +125,8 @@ public class TaskManager {
         if (isRunning.get()) return;
         isRunning.set(true);
 
+        LotteryCollector.setLogger(msg -> debug("[采集] " + msg, DebugLevel.NORMAL));
+
         if (callback != null) callback.onStatusChange(true);
         debug("启动任务", DebugLevel.INFO);
 

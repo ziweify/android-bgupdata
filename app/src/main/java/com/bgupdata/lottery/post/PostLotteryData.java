@@ -110,4 +110,12 @@ public abstract class PostLotteryData {
         }
         return sb.toString();
     }
+
+    /**
+     * 获取数据中的数字个数
+     */
+    protected int getDataCount(LotteryData data) {
+        if (data.getOpenData() == null || data.getOpenData().isEmpty()) return 0;
+        return data.getOpenData().split(",").length;
+    }
 }
