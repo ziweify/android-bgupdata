@@ -7,6 +7,7 @@ import com.bgupdata.lottery.model.LotteryData;
 import com.bgupdata.lottery.post.PostFactory;
 import com.bgupdata.lottery.post.PostLotteryData;
 import com.bgupdata.lottery.post.PostResult;
+import com.bgupdata.lottery.util.LogManager;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -54,10 +55,16 @@ public class TaskManager {
 
     private static final int MAX_POST_RETRY = 3;
 
+    private LogManager logManager;
+
     public TaskManager() {}
 
     public void setCallback(TaskCallback callback) {
         this.callback = callback;
+    }
+
+    public void setLogManager(LogManager logManager) {
+        this.logManager = logManager;
     }
 
     public void setConfig(String submitAddress, String proxyIp, boolean useProxy) {
@@ -356,6 +363,9 @@ public class TaskManager {
     private void debug(String message, DebugLevel level) {
         if (callback != null) {
             callback.onDebugMessage(message, level);
+        }
+        if (logManager != null) {
+            logManager.writeLog(message, level);
         }
     }
 }

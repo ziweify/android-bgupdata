@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -31,6 +32,7 @@ import com.bgupdata.lottery.model.LotteryData;
 import com.bgupdata.lottery.model.PostSiteType;
 import com.bgupdata.lottery.service.LotteryService;
 import com.bgupdata.lottery.service.TaskManager;
+import com.bgupdata.lottery.util.LogManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     private LotteryAdapter failedAdapter;
 
     private TaskManager taskManager;
+    private LogManager logManager;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final SpannableStringBuilder debugBuilder = new SpannableStringBuilder();
@@ -72,8 +75,13 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         initDefaultAddresses();
         initListeners();
 
+        logManager = LogManager.getInstance(this);
+
         taskManager = new TaskManager();
+        taskManager.setLogManager(logManager);
         taskManager.setCallback(this);
+
+        loadTodayLogs();
     }
 
     private void initViews() {
@@ -277,9 +285,70 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     }
 
     private void clearDebug() {
-        debugBuilder.clear();
-        debugLineCount = 0;
-        tvDebug.setText("");
+        PopupMenu popup = new PopupMenu(this, btnClearDebug);
+        popup.getMenu().add(0, 1, 0, "清除屏幕显示");
+        popup.getMenu().add(0, 2, 1, "删除当天日志");
+        popup.getMenu().add(0, 3, 2, "删除全部日志");
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1:
+                    debugBuilder.clear();
+                    debugLineCount = 0;
+                    tvDebug.setText("");
+                    return true;
+                case 2:
+                    logManager.deleteTodayLog();
+                    debugBuilder.clear();
+                    debugLineCount = 0;
+                    tvDebug.setText("");
+                    Toast.makeText(this, "当天日志已删除", Toast.LENGTH_SHORT).show();
+                    return true;
+                case 3:
+                    new AlertDialog.Builder(this)
+                            .setTitle("确认")
+                            .setMessage("确定要删除全部日志文件吗？")
+                            .setPositiveButton("删除", (d, w) -> {
+                                logManager.deleteAllLogs();
+                                debugBuilder.clear();
+                                debugLineCount = 0;
+                                tvDebug.setText("");
+                                Toast.makeText(this, "全部日志已删除", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("取消", null)
+                            .show();
+                    return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+
+    private void loadTodayLogs() {
+        new Thread(() -> {
+            String logs = logManager.readTodayLogs();
+            if (!logs.isEmpty()) {
+                mainHandler.post(() -> {
+                    String[] lines = logs.split("\n");
+                    for (String line : lines) {
+                        if (line.isEmpty()) continue;
+                        SpannableString spanLine = new SpannableString(line + "\n");
+                        int color = getResources().getColor(R.color.debug_normal);
+                        if (line.contains("[INFO]")) {
+                            color = getResources().getColor(R.color.debug_info);
+                        } else if (line.contains("[WARN]")) {
+                            color = getResources().getColor(R.color.debug_warn);
+                        } else if (line.contains("[ERROR]")) {
+                            color = getResources().getColor(R.color.debug_error);
+                        }
+                        spanLine.setSpan(new ForegroundColorSpan(color), 0, spanLine.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        debugBuilder.append(spanLine);
+                        debugLineCount++;
+                    }
+                    tvDebug.setText(debugBuilder);
+                    svDebug.post(() -> svDebug.fullScroll(ScrollView.FOCUS_DOWN));
+                });
+            }
+        }).start();
     }
 
     // ==================== TaskCallback ====================
