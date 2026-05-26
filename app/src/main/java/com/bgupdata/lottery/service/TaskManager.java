@@ -221,9 +221,16 @@ public class TaskManager {
     }
 
     /**
-     * 插入采集进行中列表
+     * 插入采集进行中列表（仅当已到开奖时间）
      */
     private void insertCollecting(int issueId) {
+        if (!BgBaseApi.isIssueOpenTimeReached(issueId)) {
+            long openTs = BgBaseApi.getOpenTimestamp(issueId);
+            long waitSeconds = openTs - System.currentTimeMillis() / 1000;
+            debug(String.format("期号未开奖，暂不采集: %d, 距离开奖 %d 秒", issueId, waitSeconds), DebugLevel.NORMAL);
+            return;
+        }
+
         for (LotteryData d : collectingList) {
             if (d.getIssueId() == issueId) return;
         }
@@ -234,12 +241,29 @@ public class TaskManager {
     }
 
     /**
+     * 采集列表中是否存在已到开奖时间的期号
+     */
+    private boolean hasReadyCollectingIssue() {
+        for (LotteryData data : collectingList) {
+            if (BgBaseApi.isIssueOpenTimeReached(data.getIssueId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 采集循环
      */
     private void collectLoop() {
         while (isRunning.get()) {
             try {
                 if (!collectingList.isEmpty()) {
+                    if (!hasReadyCollectingIssue()) {
+                        Thread.sleep(2000);
+                        continue;
+                    }
+
                     LotteryData first = collectingList.get(0);
                     int curId = 0;
                     if (!curIssueId.isEmpty()) {
@@ -248,8 +272,8 @@ public class TaskManager {
 
                     List<LotteryData> fetchedItems = new ArrayList<>();
 
-                    // 优先使用最新一期API
-                    if (first.getIssueId() == curId) {
+                    // 优先使用最新一期API（仅当该期已到开奖时间）
+                    if (first.getIssueId() == curId && BgBaseApi.isIssueOpenTimeReached(first.getIssueId())) {
                         try {
                             LotteryData latest = LotteryCollector.fetchLatest(useProxy ? proxyIp : null);
                             if (latest != null && latest.getIssueId() == curId) {
@@ -314,6 +338,10 @@ public class TaskManager {
         List<LotteryData> toRemove = new ArrayList<>();
 
         for (LotteryData collecting : collectingList) {
+            if (!BgBaseApi.isIssueOpenTimeReached(collecting.getIssueId())) {
+                continue;
+            }
+
             collecting.incrementAcCount();
             boolean matched = false;
 

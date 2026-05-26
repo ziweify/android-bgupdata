@@ -77,6 +77,15 @@ public class BgBaseApi {
     }
 
     /**
+     * 判断指定期号是否已到开奖时间
+     */
+    public static boolean isIssueOpenTimeReached(int issueId) {
+        long openTimestamp = getOpenTimestamp(issueId);
+        long nowSeconds = System.currentTimeMillis() / 1000;
+        return nowSeconds >= openTimestamp;
+    }
+
+    /**
      * 时间戳(秒)转Date
      */
     public static Date getDateFromTimestamp(long timestamp) {
