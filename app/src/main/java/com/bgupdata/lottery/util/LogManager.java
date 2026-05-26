@@ -1,6 +1,7 @@
 package com.bgupdata.lottery.util;
 
 import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 
@@ -15,13 +16,14 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 /**
  * 日志管理器 - 异步写入，按天分文件存储
+ * 日志存放在外部存储: /sdcard/ShuiGuoCaiJi/logs/
+ * 电脑USB连接手机后可直接查看
  */
 public class LogManager {
 
@@ -33,7 +35,8 @@ public class LogManager {
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
 
     private LogManager(Context context) {
-        logDir = new File(context.getFilesDir(), "logs");
+        File externalDir = Environment.getExternalStorageDirectory();
+        logDir = new File(externalDir, "ShuiGuoCaiJi/logs");
         if (!logDir.exists()) {
             logDir.mkdirs();
         }
@@ -48,6 +51,13 @@ public class LogManager {
             instance = new LogManager(context.getApplicationContext());
         }
         return instance;
+    }
+
+    /**
+     * 获取日志目录路径（供外部显示）
+     */
+    public String getLogDirPath() {
+        return logDir.getAbsolutePath();
     }
 
     /**
