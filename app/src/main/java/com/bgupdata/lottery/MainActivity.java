@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bgupdata.lottery.adapter.AddressAdapter;
+import com.bgupdata.lottery.adapter.CompletedLotteryAdapter;
 import com.bgupdata.lottery.adapter.LotteryAdapter;
 import com.bgupdata.lottery.model.AddressItem;
 import com.bgupdata.lottery.model.DebugLevel;
@@ -47,14 +48,14 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     private TextView tvStatus, tvIssueCur, tvTimeCur, tvIssueNext, tvTimeNext, tvCountdown;
     private TextView tvCollectingTitle, tvCompletedTitle, tvFailedTitle, tvDebug;
     private EditText etProxy;
-    private SwitchMaterial switchProxy;
-    private MaterialButton btnStart, btnStop, btnClearDebug, btnAddAddress;
+    private SwitchMaterial switchProxy, switchAutoPost;
+    private MaterialButton btnStart, btnStop, btnClearDebug, btnAddAddress, btnPostAll;
     private RecyclerView rvAddress, rvCollecting, rvCompleted, rvFailed;
     private ScrollView svDebug;
 
     private AddressAdapter addressAdapter;
     private LotteryAdapter collectingAdapter;
-    private LotteryAdapter completedAdapter;
+    private CompletedLotteryAdapter completedAdapter;
     private LotteryAdapter failedAdapter;
 
     private TaskManager taskManager;
@@ -97,10 +98,12 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         tvDebug = findViewById(R.id.tv_debug);
         etProxy = findViewById(R.id.et_proxy);
         switchProxy = findViewById(R.id.switch_proxy);
+        switchAutoPost = findViewById(R.id.switch_auto_post);
         btnStart = findViewById(R.id.btn_start);
         btnStop = findViewById(R.id.btn_stop);
         btnClearDebug = findViewById(R.id.btn_clear_debug);
         btnAddAddress = findViewById(R.id.btn_add_address);
+        btnPostAll = findViewById(R.id.btn_post_all);
         rvAddress = findViewById(R.id.rv_address);
         rvCollecting = findViewById(R.id.rv_collecting);
         rvCompleted = findViewById(R.id.rv_completed);
@@ -139,7 +142,12 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         rvCollecting.setLayoutManager(new LinearLayoutManager(this));
         rvCollecting.setAdapter(collectingAdapter);
 
-        completedAdapter = new LotteryAdapter();
+        completedAdapter = new CompletedLotteryAdapter();
+        completedAdapter.setPostClickListener((position, data) -> {
+            taskManager.updateSubmitAddress(buildAddressConfig());
+            taskManager.manualPostSingle(data);
+            Toast.makeText(this, "投递: " + data.getIssueId(), Toast.LENGTH_SHORT).show();
+        });
         rvCompleted.setLayoutManager(new LinearLayoutManager(this));
         rvCompleted.setAdapter(completedAdapter);
 
@@ -164,6 +172,20 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         btnStop.setOnClickListener(v -> stopTask());
         btnClearDebug.setOnClickListener(v -> clearDebug());
         btnAddAddress.setOnClickListener(v -> showAddressDialog(-1, null));
+
+        switchAutoPost.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (taskManager != null) {
+                taskManager.setAutoPost(isChecked);
+            }
+        });
+
+        btnPostAll.setOnClickListener(v -> {
+            if (taskManager != null) {
+                taskManager.updateSubmitAddress(buildAddressConfig());
+                taskManager.manualPostAll();
+                Toast.makeText(this, "全部投递已触发", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         com.google.android.material.appbar.MaterialToolbar toolbar = findViewById(R.id.toolbar);
         toolbar.inflateMenu(R.menu.menu_main);
@@ -257,6 +279,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         }
 
         taskManager.setConfig(address, proxy, useProxy);
+        taskManager.setAutoPost(switchAutoPost.isChecked());
         taskManager.start();
 
         btnStart.setEnabled(false);

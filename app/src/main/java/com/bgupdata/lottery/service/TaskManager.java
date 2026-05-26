@@ -52,6 +52,7 @@ public class TaskManager {
     private String submitAddress = "";
     private String proxyIp = "";
     private boolean useProxy = false;
+    private volatile boolean autoPost = true;
 
     private static final int MAX_POST_RETRY = 3;
 
@@ -65,6 +66,44 @@ public class TaskManager {
 
     public void setLogManager(LogManager logManager) {
         this.logManager = logManager;
+    }
+
+    public void setAutoPost(boolean autoPost) {
+        this.autoPost = autoPost;
+    }
+
+    public boolean isAutoPost() {
+        return autoPost;
+    }
+
+    /**
+     * 手动投递单条数据
+     */
+    public void manualPostSingle(LotteryData data) {
+        debug(String.format("手动投递: %d", data.getIssueId()), DebugLevel.INFO);
+        postData(data);
+    }
+
+    /**
+     * 手动投递全部已完成数据
+     */
+    public void manualPostAll() {
+        List<LotteryData> list = new ArrayList<>(completedList);
+        if (list.isEmpty()) {
+            debug("没有可投递的数据", DebugLevel.WARN);
+            return;
+        }
+        debug(String.format("手动投递全部: %d条", list.size()), DebugLevel.INFO);
+        for (LotteryData data : list) {
+            postData(data);
+        }
+    }
+
+    /**
+     * 更新投递地址配置（运行中可动态更新）
+     */
+    public void updateSubmitAddress(String submitAddress) {
+        this.submitAddress = submitAddress;
     }
 
     public void setConfig(String submitAddress, String proxyIp, boolean useProxy) {
@@ -278,7 +317,9 @@ public class TaskManager {
                     matched = true;
 
                     debug(String.format("采集成功: %d -> %s", fetched.getIssueId(), fetched.getOpenData()), DebugLevel.INFO);
-                    postData(fetched);
+                    if (autoPost) {
+                        postData(fetched);
+                    }
                     break;
                 }
             }
