@@ -33,6 +33,7 @@ public class TaskManager {
         void onFailedListUpdate(List<LotteryData> list);
         void onDebugMessage(String message, DebugLevel level);
         void onStatusChange(boolean running);
+        String onGetCurrentAddressConfig();
     }
 
     private TaskCallback callback;
@@ -348,10 +349,18 @@ public class TaskManager {
     }
 
     /**
-     * 投递数据到所有配置的服务器
+     * 投递数据到所有配置的服务器（使用实时地址配置）
      */
     private void postData(LotteryData data) {
-        List<PostLotteryData> posters = PostFactory.create(submitAddress);
+        String currentAddress = submitAddress;
+        if (callback != null) {
+            String latest = callback.onGetCurrentAddressConfig();
+            if (latest != null && !latest.isEmpty()) {
+                currentAddress = latest;
+            }
+        }
+
+        List<PostLotteryData> posters = PostFactory.create(currentAddress);
         if (posters.isEmpty()) {
             debug("没有配置投递地址", DebugLevel.WARN);
             return;

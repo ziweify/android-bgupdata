@@ -11,6 +11,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
 
     private TextView tvStatus, tvIssueCur, tvTimeCur, tvIssueNext, tvTimeNext, tvCountdown;
     private TextView tvCollectingTitle, tvCompletedTitle, tvFailedTitle, tvDebug;
+    private TextView tvCollectingArrow, tvCompletedArrow, tvFailedArrow;
     private EditText etProxy;
     private SwitchMaterial switchProxy, switchAutoPost;
     private MaterialButton btnStart, btnStop, btnClearDebug, btnAddAddress, btnPostAll;
@@ -65,6 +67,10 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     private final SpannableStringBuilder debugBuilder = new SpannableStringBuilder();
     private int debugLineCount = 0;
     private static final int MAX_DEBUG_LINES = 500;
+
+    private boolean collectingExpanded = true;
+    private boolean completedExpanded = true;
+    private boolean failedExpanded = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +101,9 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
         tvCollectingTitle = findViewById(R.id.tv_collecting_title);
         tvCompletedTitle = findViewById(R.id.tv_completed_title);
         tvFailedTitle = findViewById(R.id.tv_failed_title);
+        tvCollectingArrow = findViewById(R.id.tv_collecting_arrow);
+        tvCompletedArrow = findViewById(R.id.tv_completed_arrow);
+        tvFailedArrow = findViewById(R.id.tv_failed_arrow);
         tvDebug = findViewById(R.id.tv_debug);
         etProxy = findViewById(R.id.et_proxy);
         switchProxy = findViewById(R.id.switch_proxy);
@@ -187,6 +196,24 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
             }
         });
 
+        findViewById(R.id.layout_collecting_title).setOnClickListener(v -> {
+            collectingExpanded = !collectingExpanded;
+            rvCollecting.setVisibility(collectingExpanded ? View.VISIBLE : View.GONE);
+            tvCollectingArrow.setText(collectingExpanded ? "▼" : "▶");
+        });
+
+        findViewById(R.id.layout_completed_title).setOnClickListener(v -> {
+            completedExpanded = !completedExpanded;
+            rvCompleted.setVisibility(completedExpanded ? View.VISIBLE : View.GONE);
+            tvCompletedArrow.setText(completedExpanded ? "▼" : "▶");
+        });
+
+        findViewById(R.id.layout_failed_title).setOnClickListener(v -> {
+            failedExpanded = !failedExpanded;
+            rvFailed.setVisibility(failedExpanded ? View.VISIBLE : View.GONE);
+            tvFailedArrow.setText(failedExpanded ? "▼" : "▶");
+        });
+
         com.google.android.material.appbar.MaterialToolbar toolbar = findViewById(R.id.toolbar);
         toolbar.inflateMenu(R.menu.menu_main);
         toolbar.setOnMenuItemClickListener(item -> {
@@ -196,12 +223,18 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
             }
             return false;
         });
+
+        svDebug.setOnTouchListener((v, event) -> {
+            int action = event.getAction();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+                v.getParent().requestDisallowInterceptTouchEvent(true);
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                v.getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            return false;
+        });
     }
 
-    /**
-     * 显示添加/编辑地址对话框
-     * @param position -1表示新增，>=0表示编辑
-     */
     private void showAddressDialog(int position, AddressItem existingItem) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_address, null);
         TextView tvTitle = dialogView.findViewById(R.id.tv_dialog_title);
@@ -470,6 +503,11 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
                 tvStatus.setTextColor(getResources().getColor(R.color.status_stopped));
             }
         });
+    }
+
+    @Override
+    public String onGetCurrentAddressConfig() {
+        return buildAddressConfig();
     }
 
     @Override

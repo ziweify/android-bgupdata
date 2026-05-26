@@ -3,8 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingVertical="3dp"
-    android:gravity="center_vertical">
+    android:paddingVertical="6dp"
+    android:paddingHorizontal="2dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground">
 
     <TextView
         android:id="@+id/tv_issue_id"
@@ -37,12 +39,13 @@
     <TextView
         android:id="@+id/btn_post_item"
         android:layout_width="wrap_content"
-        android:layout_height="24dp"
+        android:layout_height="30dp"
+        android:minWidth="48dp"
         android:gravity="center"
-        android:paddingHorizontal="8dp"
-        android:layout_marginStart="4dp"
+        android:paddingHorizontal="10dp"
+        android:layout_marginStart="6dp"
         android:text="投递"
-        android:textSize="11sp"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:background="@color/primary"
         android:clickable="true"
