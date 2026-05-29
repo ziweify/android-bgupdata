@@ -429,28 +429,40 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
     private void loadTodayLogs() {
         new Thread(() -> {
             String logs = logManager.readTodayLogs();
-            if (!logs.isEmpty()) {
-                mainHandler.post(() -> {
-                    String[] lines = logs.split("\n");
-                    for (String line : lines) {
-                        if (line.isEmpty()) continue;
-                        SpannableString spanLine = new SpannableString(line + "\n");
-                        int color = getResources().getColor(R.color.debug_normal);
-                        if (line.contains("[INFO]")) {
-                            color = getResources().getColor(R.color.debug_info);
-                        } else if (line.contains("[WARN]")) {
-                            color = getResources().getColor(R.color.debug_warn);
-                        } else if (line.contains("[ERROR]")) {
-                            color = getResources().getColor(R.color.debug_error);
-                        }
-                        spanLine.setSpan(new ForegroundColorSpan(color), 0, spanLine.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        debugBuilder.append(spanLine);
-                        debugLineCount++;
-                    }
-                    tvDebug.setText(debugBuilder);
-                });
-            }
+            mainHandler.post(() -> displayLogs(logs));
         }).start();
+    }
+
+    private void displayLogs(String logs) {
+        debugBuilder.clear();
+        debugLineCount = 0;
+        if (logs == null || logs.isEmpty()) {
+            tvDebug.setText("");
+            return;
+        }
+
+        String[] lines = logs.split("\n");
+        for (String line : lines) {
+            if (line.isEmpty()) continue;
+            appendDebugLine(line);
+        }
+        tvDebug.setText(debugBuilder);
+        svDebug.post(() -> svDebug.scrollTo(0, tvDebug.getBottom()));
+    }
+
+    private void appendDebugLine(String line) {
+        SpannableString spanLine = new SpannableString(line + "\n");
+        int color = getResources().getColor(R.color.debug_normal);
+        if (line.contains("[INFO]")) {
+            color = getResources().getColor(R.color.debug_info);
+        } else if (line.contains("[WARN]")) {
+            color = getResources().getColor(R.color.debug_warn);
+        } else if (line.contains("[ERROR]")) {
+            color = getResources().getColor(R.color.debug_error);
+        }
+        spanLine.setSpan(new ForegroundColorSpan(color), 0, spanLine.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        debugBuilder.append(spanLine);
+        debugLineCount++;
     }
 
     // ==================== TaskCallback ====================
@@ -535,6 +547,19 @@ public class MainActivity extends AppCompatActivity implements TaskManager.TaskC
 
             tvDebug.setText(debugBuilder);
             svDebug.post(() -> svDebug.scrollTo(0, tvDebug.getBottom()));
+        });
+    }
+
+    @Override
+    public void onAutoCleanup() {
+        mainHandler.post(() -> {
+            debugBuilder.clear();
+            debugLineCount = 0;
+            tvDebug.setText("");
+            new Thread(() -> {
+                String logs = logManager.readTodayLogs();
+                mainHandler.post(() -> displayLogs(logs));
+            }).start();
         });
     }
 

@@ -33,6 +33,7 @@ public class TaskManager {
         void onFailedListUpdate(List<LotteryData> list);
         void onDebugMessage(String message, DebugLevel level);
         void onStatusChange(boolean running);
+        void onAutoCleanup();
     }
 
     private TaskCallback callback;
@@ -55,8 +56,10 @@ public class TaskManager {
     private volatile boolean autoPost = true;
 
     private static final int MAX_POST_RETRY = 3;
+    private static final int KEEP_COMPLETED_COUNT = 5;
 
     private LogManager logManager;
+    private int lastCleanupIssueId = 0;
 
     public TaskManager() {}
 
@@ -356,6 +359,9 @@ public class TaskManager {
                     if (autoPost) {
                         postData(fetched);
                     }
+                    if (BgBaseApi.isLastIssueOfDay(fetched.getIssueId())) {
+                        performAutoCleanup(fetched.getIssueId());
+                    }
                     break;
                 }
             }
@@ -381,6 +387,34 @@ public class TaskManager {
             notifyCompletedUpdate();
             notifyFailedUpdate();
         }
+    }
+
+    /**
+     * 当天最后一期采集完成后自动清理，避免长期运行占用过多内存
+     */
+    private void performAutoCleanup(int triggerIssueId) {
+        if (triggerIssueId == lastCleanupIssueId) return;
+        lastCleanupIssueId = triggerIssueId;
+
+        while (completedList.size() > KEEP_COMPLETED_COUNT) {
+            completedList.remove(completedList.size() - 1);
+        }
+
+        List<Integer> keepIssueIds = new ArrayList<>();
+        for (LotteryData data : completedList) {
+            keepIssueIds.add(data.getIssueId());
+        }
+
+        if (logManager != null) {
+            logManager.trimTodayLogsKeepIssues(keepIssueIds);
+        }
+
+        if (callback != null) {
+            callback.onAutoCleanup();
+        }
+
+        notifyCompletedUpdate();
+        debug(String.format("当日最后一期(%d)采集完成，已自动清理(保留最近%d期完成数据和日志)", triggerIssueId, KEEP_COMPLETED_COUNT), DebugLevel.INFO);
     }
 
     /**

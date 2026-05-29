@@ -150,6 +150,49 @@ public class LogManager {
         }
     }
 
+    /**
+     * 仅保留与指定期号相关的日志行
+     */
+    public void trimTodayLogsKeepIssues(List<Integer> issueIds) {
+        if (issueIds == null || issueIds.isEmpty()) {
+            deleteTodayLog();
+            return;
+        }
+
+        String fileName = "log_" + dateFormat.format(new Date()) + ".txt";
+        File logFile = new File(logDir, fileName);
+        if (!logFile.exists()) return;
+
+        List<String> keptLines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (shouldKeepLogLine(line, issueIds)) {
+                    keptLines.add(line);
+                }
+            }
+        } catch (IOException e) {
+            return;
+        }
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(logFile, false))) {
+            for (String line : keptLines) {
+                writer.println(line);
+            }
+        } catch (IOException e) {
+            // 写入失败静默处理
+        }
+    }
+
+    private boolean shouldKeepLogLine(String line, List<Integer> issueIds) {
+        for (int issueId : issueIds) {
+            if (line.contains(String.valueOf(issueId))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private String levelToString(DebugLevel level) {
         switch (level) {
             case INFO: return "INFO";

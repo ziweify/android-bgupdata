@@ -12,7 +12,7 @@ import java.util.TimeZone;
  */
 public class BgBaseApi {
 
-    private static final int COUNT_REAL = 203;
+    public static final int COUNT_REAL = 203;
     // 2026年基准数据
     private static final int FIRST_ISSUE_ID = 115000001;
     private static final long FIRST_TIMESTAMP = 1767222300L;
@@ -74,6 +74,13 @@ public class BgBaseApi {
     public static int getDays(int issueId) {
         int value = issueId - FIRST_ISSUE_ID;
         return value / COUNT_REAL;
+    }
+
+    /**
+     * 是否为当天最后一期
+     */
+    public static boolean isLastIssueOfDay(int issueId) {
+        return getNumber(issueId) == COUNT_REAL;
     }
 
     /**
